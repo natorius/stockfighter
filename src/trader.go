@@ -51,7 +51,31 @@ type Response struct {
   Ok bool `json:"ok"`
 }
 
-func (c Client) checkURL(urlFrag string) {
+type Stock struct {
+  Venue  string `json:"venue"`
+  Symbol string `json:"symbol"`
+}
+
+type Order struct {
+  Price int  `json:"price"`
+  Qty   int  `json:"qty"`
+  IsBuy bool `json:"isBuy"`
+}
+type OrderBook struct {
+  Stock
+  Bids []Order `json:"bids"`
+  Asks []Order `json:"asks"`
+  Time string  `json:"ts"`
+}
+type OrderBookResponse struct {
+  Response
+  OrderBook
+}
+type NoInterface interface {} // TODO: nointerface is probly bad
+
+// TODO: url and body expectation are inseperable, should be turned
+//       into a struct
+func (c Client) getURL(urlFrag string, body NoInterface) {
   url      := "https://api.stockfighter.io/ob/api/" + urlFrag
   req, err := http.NewRequest("GET", url, nil)
   if err != nil { log.Fatal(err) }
@@ -63,23 +87,25 @@ func (c Client) checkURL(urlFrag string) {
   }
   defer resp.Body.Close()
 
-  var sfresp Response
   decoder := json.NewDecoder(resp.Body)
-
-  err      = decoder.Decode(&sfresp)
+  err      = decoder.Decode(body)
   if err != nil { log.Fatal(err) }
 
-  log.Printf("%v UP: %+v", urlFrag, sfresp)
+  log.Printf("%v UP: %+v", urlFrag, body)
 }
 
 func main() {
   config := getConfig()
   log.Println("key:" + config.ApiKey)
+  // TODO: rename Client, AuthClient?
   client := Client{&http.Client{}, config.ApiKey}
   
-  client.checkURL("heartbeat")
-  client.checkURL("venues/TESTEX/heartbeat")
-//  client.checkURL("venues/UKHNEX/heartbeat")
+  var resp Response
+  client.getURL("heartbeat", &resp)
+  client.getURL("venues/TESTEX/heartbeat", &resp)
+
+  var orderBookResponse OrderBookResponse
+  client.getURL("venues/TESTEX/stocks/FOOBAR", &orderBookResponse)
   
   
 }
