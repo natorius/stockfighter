@@ -1,7 +1,7 @@
 package main
 
 import (
-  //"net/http"
+  "net/http"
   "encoding/json"
   "log"
   "os"
@@ -35,24 +35,26 @@ func getConfig() Config {
   if err != nil {
     log.Fatal(err)
   }
-  
   if logging { log.Println("key:" + config.ApiKey) }
 
   return config
-  
-  // c  := &Config{ApiKey: "test"}
-  // encoder := json.NewEncoder(os.Stdout)
-  // encoder.Encode(c)
-  
-  // fmt.Println("enc test")
-  //     enc := json.NewEncoder(os.Stdout)
-  //   d := map[string]int{"apple": 5, "lettuce": 7}
-  //   enc.Encode(d)
-  
 }
 
+func checkURL(urlFrag string) {
+  resp, err := http.Get("https://api.stockfighter.io/ob/api/" + urlFrag)
+  if err != nil || resp.StatusCode != 200 { 
+    log.Fatal("Error: ", err, "\nResp: ", resp)
+  }
+  defer resp.Body.Close()
+  log.Println(urlFrag + " UP: ", resp.Body)
+}
 
 func main() {
   config := getConfig()
   log.Println("key:" + config.ApiKey)
+  //client := &http.Client{}
+  
+  checkURL("heartbeat")
+  checkURL("venues/TESTEX/heartbeat")
+  
 }
